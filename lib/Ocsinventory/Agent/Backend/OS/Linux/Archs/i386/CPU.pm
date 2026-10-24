@@ -18,6 +18,8 @@ sub run {
     my @cpuinfos=`LANG=C lscpu`;
     my $cpu;
     my $nbcpus;
+    my $maxspeed;
+    my $dmispeed;
 
     foreach my $info (@cpuinfos){
         chomp $info;
@@ -35,6 +37,7 @@ sub run {
         }
 
         $cpu->{CURRENT_SPEED} = $1 if ($info =~ /CPU\sMHz:\s*(\d+)(|\.\d+)$/i);
+        $maxspeed = $1 if ($info =~ /CPU\smax\sMHz:\s*(\d+)/i);
         $cpu->{L2CACHESIZE} = $1 if ($info =~ /L2\scache:\s*(.*)/i);
         if ($cpu->{CPUARCH} && $cpu->{CPUARCH} eq 'x86_64'){
             $cpu->{DATA_WIDTH}='64';
@@ -66,7 +69,11 @@ sub run {
         $cpu->{SERIALNUMBER}=$info->{'Serial Number'};
         $cpu->{VOLTAGE}=$info->{'Voltage'};
         $cpu->{SOCKET}=$info->{'Socket Designation'};
+        $dmispeed=$1 if ($info->{'Current Speed'} && $info->{'Current Speed'} =~ /^(\d+)\s*MHz/i);
     }
+
+    # The model name of AMD and recent Intel CPUs holds no frequency
+    $cpu->{SPEED} ||= $dmispeed || $maxspeed;
 
     for (my $i=0;$i<$cpu->{NBSOCKET};$i++) {
         $common->addCPU($cpu);
