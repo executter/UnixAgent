@@ -53,6 +53,18 @@ sub run {
             }
         }
     }
+
+    # lscpu prints "CPU MHz" only up to util-linux 2.37: read the current
+    # frequency of the first CPU from /proc/cpuinfo, as it did
+    if (!$cpu->{CURRENT_SPEED} && open(my $fh, '<', '/proc/cpuinfo')) {
+        while (<$fh>) {
+            if (/^cpu MHz\s*:\s*(\d+)/i) {
+                $cpu->{CURRENT_SPEED} = $1;
+                last;
+            }
+        }
+        close $fh;
+    }
    
     # Total Threads = number of cores x number of threads per core
     $cpu->{THREADS}=$cpu->{CORES}*$cpu->{THREADS};
